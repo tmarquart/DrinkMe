@@ -1,0 +1,137 @@
+<!--Menu Page Template-->
+<!--April 27 Version with Tyler-->
+
+<!DOCTYPE html>
+<html>
+<html lang="en">
+<head>
+  <title>Bootstrap Example</title>
+  <meta charset="utf-8">
+  <!--require bootstrap-->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  
+  <!--load data file-->
+  <script src="datatable.js"></script>
+
+  <!--load handlebars-->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0/handlebars.js"></script>
+
+<!--Page Header-->
+</head>
+<div class="jumbotron text-center">
+  <h1>Menu</h1>
+  <p>Select your drink (or two or three or...!)</p> 
+</div>
+
+<!--Check Out Modal-->
+
+<!-- Button trigger modal -->
+<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal">
+  Checkout
+</button>
+
+
+<!--Item Template-->
+<div id="MenuItem"></div>
+<script id="entry-template" type="text/x-handlebars-template">
+    <div class = "col-sm-4">
+        <h3>{{ItemName}}</h3>
+        <p>${{ItemCost}}</p>
+        <p>{{ItemDescription}}</p>
+        <button type="button" class="btn btn-success" drinkId={{ItemID}}>Order</button>
+ </div>
+</script>
+
+<script>
+// Display Menu Items
+var rendered = ''; // starting off with a blank string
+var source   = $('#entry-template').html();
+var template = Handlebars.compile(source);
+datatable.forEach(function(item) {
+    var html = template(item);
+    rendered += html;
+});
+$("#MenuItem").html(rendered);
+
+// Add Item to Cart
+var cart = []; //create empty cart
+$(".btn.btn-success").click(function(e) {
+    console.log('cart button data '+e);
+    alert("Drink ID Number: " + e.target.getAttribute("drinkid")+" has been added to your cart" );
+    cart.push(Number(e.target.getAttribute("drinkid")));
+    console.log('cart: '+cart);
+});
+</script>
+
+<!-- Checkout Modal appearance -->
+<div class="modal fade" id= "myModal">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Checkout</h5>
+            <form>
+                <div class="form-group" id='nameinputdiv'> 
+                <label for="formGroupExampleInput">Name:</label>
+                <input type="text" class="form-control" id="NameInput" placeholder="Your name here">
+                </div>
+                <div class="form-group" id='commentsinput'>
+                <label for="formGroupExampleInput2">Special Comments:</label>
+                <input type="text" class="form-control" id="CommentsInput" placeholder="Allergies, Requests, etc...">
+                </div>
+            </form>
+        <!--<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>-->
+      </div>
+      <div class="modal-body">
+        <p>Click OK to send your order to the bar!</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id='OK_button'>OK</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal" id='dismiss_button'>Nevermind!</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!--Pop up Checkout Modal on click-->
+<script>
+$('#myModal').on('shown.bs.modal', function () {
+  $('#myInput').focus();
+});
+</script>
+
+<script>
+// Record Order to OrderArray
+var OrdersArray = []; //create empty orders object
+$("#OK_button").click(function(e) {
+    OrdersArray.push($('#myModal #NameInput')[0].value);
+    OrdersArray.push(cart);
+    OrdersArray.push($('#myModal #CommentsInput')[0].value);
+    var orderTime = Date.now();
+    OrdersArray.push(orderTime);
+    // alert("Drink Number" + e.target.getAttribute("drinkid")+" Added to Cart" );
+    //OrdersArray.push(Number(e.target.getAttribute('timeStamp')));
+    //OrdersArray.Number(e.target.getAttribute('timestamp')).push(cart);
+    console.log('orders array: '+OrdersArray);
+    $('#myModal').modal('hide');
+    return OrdersArray;
+});
+</script>
+
+<script>
+//dismiss modal if "Nevermind"
+$("#dismiss_button").click(function(e) {
+    $('#myModal').modal('hide');
+});
+</script>
+
+</html>
+
+
+<!--// on click add to cart (push drink into array that keeps track)
+// click checkout which brings up modal 
+// in modal enter name and click confirm-->
