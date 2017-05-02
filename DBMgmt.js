@@ -10,7 +10,9 @@ var fs = require('fs');
 
 var dbObj={};
 var db;
-
+var Username='User1';
+var BarID='MuddyCharles';
+var BaseChannel='DrinkMe/' + BarID + '/' + Username +'/';
 
 //MQTT
 var mqtt = require('mqtt');
@@ -19,17 +21,35 @@ var client = mqtt.connect('mqtt://107.170.38.244', 8083);
 client.on('connect', function () {
     console.log('connected');
     client.subscribe('chat');
+    client.subscribe('DrinkMe/#');
 });
 
 
 client.on('message', function (topic, msg) {
     console.log(msg.toString());
-    var newobj=JSON.parse(msg.toString());
-    if (newobj.command=='getMenu'){
+    //var newobj=JSON.parse(msg.toString());
+    var msgStr=msg.toString();
+    //if (newobj.command=='getMenu'){
+    if (topic=='DrinkMe/MuddyCharles/User1/getMenu/request'){
         console.log('GET MENU!');
-        console.log(msg.data);
-        client.publish('chat',JSON.stringify(getDrinksList(newobj.data)));
+        //console.log(msg.data);
+        client.publish(BaseChannel + 'getMenu/response',JSON.stringify(getDrinksList(msgStr)));
     }
+    if (topic==BaseChannel + 'addDrink'){
+        LoadDB();
+        addToCart({CustomerID:Username,BarID:BarID,ItemID:msgStr});
+        var out=db.exec("SELECT * FROM OrderDetail;");
+        console.log(JSON.stringify(out));
+        SaveDB();
+    }
+    if (topic==BaseChannel + 'getCart/request'){
+        LoadDB();
+        var cart = getCart(msgStr);
+        console.log(msgStr);
+        client.publish(BaseChannel + 'getCart/response',JSON.stringify(cart));
+        SaveDB();
+    }
+    //if (topic==BaseChannel)
     //console.log(newobj);
     //console.log(newobj.ItemID)
 });
@@ -56,7 +76,6 @@ function getDrinksList(BarID){
     SaveDB();
     return objectify(arr);
 }
-
 
 
  var testOrder = { ItemID: 1, CustomerID: 2, BarID: 1 };
@@ -106,15 +125,15 @@ function setComplete(OrderID){
     db.run('UPDATE Orders SET OrderStatus="Active", OrderTime=' + Date.now() + ' WHERE OrderID=' + OrderID + ';');
 }
 
-function getCart(customerID){
-    db.exec('SELECT * FROM OrderDetail LEFT JOIN Orders ON OrderDetail.OrderID=Orders.OrderID WHERE CustomerID=' + CustomerID +  ';')
+function getCart(CustomerID){
+    return db.exec('SELECT * FROM OrderDetail LEFT JOIN Orders ON OrderDetail.OrderID=Orders.OrderID WHERE CustomerID="' + CustomerID +  '";')
 }
 
 function addToCart(inputs) {
     //inputs - drinkID, customerID, BarID
 
     //see if an order exists
-    var testsql = 'SELECT OrderID FROM Orders WHERE CustomerID=' + inputs.CustomerID + ' AND OrderStatus="Pending";';
+    var testsql = 'SELECT OrderID FROM Orders WHERE CustomerID="' + inputs.CustomerID + '" AND OrderStatus="Pending";';
     var testout = db.exec(testsql);
     console.log(JSON.stringify(testout));
     console.log(testout.length);
