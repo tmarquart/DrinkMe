@@ -7,34 +7,79 @@ var fs = require('fs');
 //function initializeDB()
 
 //Create new DB
-var db = new sql.Database();
-var sqlstr = initialDBString();
-db.run(sqlstr);
 
-//load DB
-//var filebuffer = fs.readFileSync('filename.sqlite');
-//var db = new SQL.Database(filebuffer);
+var dbObj={};
+var db;
 
 
-var testOrder = { ItemID: 1, CustomerID: 2, BarID: 1 };
-addToCart(testOrder);
-checkout(1);
+//MQTT
+var mqtt = require('mqtt');
+
+var client = mqtt.connect('mqtt://107.170.38.244', 8083);
+client.on('connect', function () {
+    console.log('connected');
+    client.subscribe('chat');
+});
+
+
+client.on('message', function (topic, msg) {
+    console.log(msg.toString());
+    var newobj=JSON.parse(msg.toString());
+    if (newobj.command=='getMenu'){
+        console.log('GET MENU!');
+        console.log(msg.data);
+        client.publish('chat',JSON.stringify(getDrinksList(newobj.data)));
+    }
+    //console.log(newobj);
+    //console.log(newobj.ItemID)
+});
+//{command:string, data:[{},{}]}
+
+
+
+
+function NewDB(){
+    db = new sql.Database();
+    var sqlstr = initialDBString();
+    db.run(sqlstr);
+}
+
+function LoadDB(){
+    var filebuffer = fs.readFileSync('filename.sqlite');
+    db = new sql.Database(filebuffer);
+}
+
+function getDrinksList(BarID){
+    NewDB();
+    var arr=db.exec('SELECT * FROM ItemDetails WHERE BarID="' + BarID + '";');
+    console.log(JSON.stringify(arr));
+    SaveDB();
+    return objectify(arr);
+}
+
+
+
+ var testOrder = { ItemID: 1, CustomerID: 2, BarID: 1 };
+ //console.log(JSON.stringify(testOrder)); //
+// addToCart(testOrder);
+// checkout(1);
 //var out = db.exec('SELECT * FROM OrderDetail LEFT JOIN Orders ON OrderDetail.OrderID=Orders.OrderID;');
 //console.log(JSON.stringify(out));
 
 //var out=getBarActiveOrders(1);
 
-main('checkout',{CustomerID:1});
-var out=main('getBarActiveOrders',testOrder);
+// main('checkout',{CustomerID:1});
+// var out=main('getBarActiveOrders',testOrder);
 
-var objarrtest = JSON.stringify(objectify(out));
-console.log(objarrtest);
+// var objarrtest = JSON.stringify(objectify(out));
+// console.log(objarrtest);
 
 //Save DB
-var data = db.export();
-var buffer = new Buffer(data);
-fs.writeFileSync('./filename.sqlite', buffer);
-
+function SaveDB(){
+    var data = db.export();
+    var buffer = new Buffer(data);
+    fs.writeFileSync('./filename.sqlite', buffer);
+}
 //functions
 function main(cmd, obj){
 
@@ -180,11 +225,5 @@ function initialDBString() {
 }
 
 
-function loadDB() {
-
-    var filebuffer = fs.readFileSync('test.sqlite');
-    var db = new SQL.Database(filebuffer);
-
-}
 
 
