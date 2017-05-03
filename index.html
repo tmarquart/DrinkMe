@@ -54,7 +54,10 @@
     var source = $('#entry-template').html();
     var template = Handlebars.compile(source);
 
-    var Username = 'User1';
+    var Username = Math.floor(1000000*Math.random());
+    Username='ID'+Username;
+    //Username='User1';
+    console.log(Username);
     var BarID = 'MuddyCharles';
     var BaseChannel = 'DrinkMe/' + BarID + '/' + Username + '/';
     //tlm
@@ -72,10 +75,10 @@
 
     //client.publish('chat',JSON.stringify(datatable))
     var html;
-    getMenu();
+    getMenu(Username);
 
     client.on('message', function (topic, msg) {
-        console.log(msg.toString());
+        //console.log(msg.toString());
         if (topic == 'DrinkMe/' + BarID + '/' + Username + '/' + 'getMenu/response') {
             buildPage(msg);
         }
@@ -88,8 +91,9 @@
     var cart = []; //create empty cart
 
     function getMenu(CustomerID) {
-        client.publish('DrinkMe/MuddyCharles/User1/getMenu/request', BarID);//JSON.stringify({ command: 'getMenu', data: 'MuddyCharles' }));
-    }
+        client.publish('DrinkMe/' + BarID + '/' + CustomerID + '/' + 'getMenu/request', BarID);//JSON.stringify({ command: 'getMenu', data: 'MuddyCharles' }));
+console.log('DrinkMe/' + BarID + '/' + CustomerID + '/' + 'getMenu/request')
+}
 
     function buildPage(msg) {
         var newobj = JSON.parse(msg.toString());
@@ -106,7 +110,7 @@
             alert("Drink ID Number: " + e.target.getAttribute("drinkid") + " has been added to your cart");
             cart.push(Number(e.target.getAttribute("drinkid")));
             console.log('cart: ' + cart);
-            client.publish(BaseChannel + 'addDrink', e.target.getAttribute("drinkid"))
+            client.publish(BaseChannel + 'addDrink/request', e.target.getAttribute("drinkid"))
         });
     }
 

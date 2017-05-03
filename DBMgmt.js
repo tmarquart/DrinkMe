@@ -10,9 +10,11 @@ var fs = require('fs');
 
 var dbObj={};
 var db;
+//var Username=1000000*Math.floor(Math.random());
+//Username=Username.toString();
 var Username='User1';
 var BarID='MuddyCharles';
-var BaseChannel='DrinkMe/' + BarID + '/' + Username +'/';
+//var BaseChannel='DrinkMe/' + BarID + '/' + Username +'/';
 
 //MQTT
 var mqtt = require('mqtt');
@@ -29,24 +31,29 @@ client.on('message', function (topic, msg) {
     console.log(msg.toString());
     //var newobj=JSON.parse(msg.toString());
     var msgStr=msg.toString();
+    var topicArr=topic.split('/');
+    var UsernameID=topicArr.splice(2,1);
+    var exUser=topicArr.join('/');
+    console.log(JSON.stringify(topicArr));
+    console.log(topic);
     //if (newobj.command=='getMenu'){
-    if (topic=='DrinkMe/MuddyCharles/User1/getMenu/request'){
+    if (exUser=='DrinkMe/MuddyCharles/getMenu/request'){
         console.log('GET MENU!');
         //console.log(msg.data);
-        client.publish(BaseChannel + 'getMenu/response',JSON.stringify(getDrinksList(msgStr)));
+        client.publish(topic.replace('request','response'),JSON.stringify(getDrinksList(msgStr)));
     }
-    if (topic==BaseChannel + 'addDrink'){
+    if (exUser=='DrinkMe/MuddyCharles/addDrink/request'){
         LoadDB();
-        addToCart({CustomerID:Username,BarID:BarID,ItemID:msgStr});
+        addToCart({CustomerID:UsernameID[0],BarID:BarID,ItemID:msgStr});
         var out=db.exec("SELECT * FROM OrderDetail;");
         console.log(JSON.stringify(out));
         SaveDB();
     }
-    if (topic==BaseChannel + 'getCart/request'){
+    if (exUser=='DrinkMe/MuddyCharles/getCart/request'){
         LoadDB();
         var cart = getCart(msgStr);
         console.log(msgStr);
-        client.publish(BaseChannel + 'getCart/response',JSON.stringify(cart));
+        client.publish(topic.replace('request','response'),JSON.stringify(cart));
         SaveDB();
     }
     //if (topic==BaseChannel)
@@ -243,6 +250,8 @@ function initialDBString() {
     return sqlstr;
 }
 
-
+function channel2Obj(inputString){
+    inputString.split('/');
+}
 
 
