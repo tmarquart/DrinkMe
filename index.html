@@ -56,7 +56,7 @@
 
     var Username = 'User1';
     var BarID = 'MuddyCharles';
-    var BaseChannel='DrinkMe/' + BarID + '/' + Username +'/';
+    var BaseChannel = 'DrinkMe/' + BarID + '/' + Username + '/';
     //tlm
     //var newtbl=getDrinksList('MuddyCharles');
     //var test=require('./DBMgmt.js');
@@ -67,7 +67,7 @@
     client.on('connect', function () {
         console.log('connected');
         client.subscribe('chat');
-        client.subscribe('DrinkMe/' + BarID + '/' + Username +'/#');
+        client.subscribe('DrinkMe/' + BarID + '/' + Username + '/#');
     });
 
     //client.publish('chat',JSON.stringify(datatable))
@@ -76,47 +76,38 @@
 
     client.on('message', function (topic, msg) {
         console.log(msg.toString());
-        if (topic == 'DrinkMe/' + BarID + '/' + Username + '/' +'getMenu/response') {
-            var newobj = JSON.parse(msg.toString());
-            //console.log('got')
-            newdatatable = newobj;
-            newdatatable.forEach(function (item) {
-                html = template(item); //var
-                rendered += html;
-            });
-            $("#MenuItem").html(rendered);
-
-            $(".btn.btn-success").click(function (e) {
-                console.log('cart button data ' + e);
-                alert("Drink ID Number: " + e.target.getAttribute("drinkid") + " has been added to your cart");
-                cart.push(Number(e.target.getAttribute("drinkid")));
-                console.log('cart: ' + cart);
-                client.publish(BaseChannel + 'addDrink',e.target.getAttribute("drinkid"))
-            });
+        if (topic == 'DrinkMe/' + BarID + '/' + Username + '/' + 'getMenu/response') {
+            buildPage(msg);
         }
-        if (topic == BaseChannel + 'getCart/response'){
+        if (topic == BaseChannel + 'getCart/response') {
             //console.log(newobj);
             console.log(msg.toString());
         }
     });
 
-    // datatable.forEach(function (item) {
-    //     var html = template(item);
-    //     rendered += html;
-    // });
-    // $("#MenuItem").html(rendered);
-
-    // Add Item to Cart
     var cart = []; //create empty cart
-    // $(".btn.btn-success").click(function (e) {
-    //     console.log('cart button data ' + e);
-    //     alert("Drink ID Number: " + e.target.getAttribute("drinkid") + " has been added to your cart");
-    //     cart.push(Number(e.target.getAttribute("drinkid")));
-    //     console.log('cart: ' + cart);
-    // });
 
     function getMenu(CustomerID) {
-        client.publish('DrinkMe/MuddyCharles/User1/getMenu/request',BarID);//JSON.stringify({ command: 'getMenu', data: 'MuddyCharles' }));
+        client.publish('DrinkMe/MuddyCharles/User1/getMenu/request', BarID);//JSON.stringify({ command: 'getMenu', data: 'MuddyCharles' }));
+    }
+
+    function buildPage(msg) {
+        var newobj = JSON.parse(msg.toString());
+        //console.log('got')
+        newdatatable = newobj;
+        newdatatable.forEach(function (item) {
+            html = template(item); //var
+            rendered += html;
+        });
+        $("#MenuItem").html(rendered);
+
+        $(".btn.btn-success").click(function (e) {
+            console.log('cart button data ' + e);
+            alert("Drink ID Number: " + e.target.getAttribute("drinkid") + " has been added to your cart");
+            cart.push(Number(e.target.getAttribute("drinkid")));
+            console.log('cart: ' + cart);
+            client.publish(BaseChannel + 'addDrink', e.target.getAttribute("drinkid"))
+        });
     }
 
 </script>
@@ -156,7 +147,7 @@
 <script>
     $('#myModal').on('shown.bs.modal', function () {
         $('#myInput').focus();
-        client.publish(BaseChannel + 'getCart/request',Username);
+        client.publish(BaseChannel + 'getCart/request', Username);
     });
 
 </script>
