@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DrinkMe Bartender</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+        crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+        crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+        crossorigin="anonymous"></script>
+
+    <!--load orders data-->
+    <script src="ordersTable.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <!--load handlebars-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0/handlebars.js"></script>
+
+    <style type="text/css">
+        .order {
+            padding: 10px;
+            font-size: 25px;
+            font-weight: bold;
+            text-align: center;
+            background: #dbdfe5;
+            margin: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!--Title-->
+    <div class="jumbotron text-center">
+        <h1>Orders Up!</h1>
+        <h3>Click order to mark as complete</h3>
+    </div>
+
+    <!--Handlebars Template for Orders-->
+    <div id="CustomerOrder"></div>
+    <!-- Anuj - i added in a class variable (read up on the difference between ids and classes if its unknown)-->
+    <!-- Anuj - i also changed the Name variable to data-name, you'll see below why its useful -->
+    <!-- Anuj - both the above changes are contained within a div inside the script. Note that it is the div that will be injected into the dom. The script tag is not injected, hence any variables you set on the script are lost. Hence we are setting the variables on the div -->
+    <!-- Anuj - Is n a valid element? I changed the elements to h1, h4, h5. -->
+    <script id="orders-template" type="text/x-handlebars-template">
+        <div class="order" data-name={{OrderID}}>
+            <h1>{{CustomerName}}</h1>
+            <h4>{{ItemNames}} (${{OrderCost}}) <br /> {{CustomerComments}}</h4>
+            <h5>{{status}}</h5>
+        </div>
+    </script>
+
+    <!--Render Orders to HTML-->
+    <script>
+        var BarID = 'MuddyCharles';
+        var client = mqtt.connect('ws://107.170.38.244', { port: 8083 });
+        client.on('connect', function () {
+            console.log('connected');
+            client.subscribe('chat');
+            client.subscribe('DrinkMe/' + BarID + '/#');
+        });
+
+        client.on('message', function (topic, msg) {
+            //console.log(msg.toString());
+            if (topic == 'DrinkMe/' + BarID + '/Bar/' + 'getOrders/response') {
+                console.log(msg.toString());
+                var msgObj = JSON.parse(msg.toString());
+                var inputTable = msgObj;
+
+                renderObjects(inputTable);
+                listenClick(inputTable);
+            }
+
+        });
+
+        client.on('close', function(){
+            console.log('????');
+        });
+
+            // if (topic == 'DrinkMe/' + BarID + '/+/' 'getCart/response') {
+            //     //console.log(newobj);
+            //     showCheckout(msg);
+            //     console.log(msg.toString());
+            // }
+
+
+        getOrders();
+
+        // Anuj - over here I have put the rendering code into a function so that I can reuse it later.
+        function renderObjects(ordersTable) {
+            var rendered = '';
+            var source = $('#orders-template').html();
+            var template = Handlebars.compile(source);
+            ordersTable.forEach(function (item) {
+                var html = template(item);
+                rendered += html;
+            });
+            $("#CustomerOrder").html(rendered);
+        }
+
+
+
+        renderObjects(ordersTable);
+
+        function getOrders() {
+            client.publish('DrinkMe/' + BarID + '/Bar/' + 'getOrders/request', BarID);
+        }
+    </script>
+
+    <script>
+        //change "active" to "inactive" on click <-- how do i get change a property of a specific drink?
+        // goal is to create "active" array to toggle from "Active" to "Inactive" when the bartender clicks the drink.
+        var Completed = [];
+
+        // Anuj - now over here we listen for the click event that originates from the order class. Note that you could also have a button here and it would work similar. Just make sure that the class name on the button is the same as the class name that you set up the click event on.
+
+        function listenClick(ordersTable) {
+            $(".order").on('click', function (e) {
+                //??????????????;
+                //update Completed array so it stores info like Active=[{name:john, order: completed} {name:tim, order:completed}]
+                //the completed array only needs to store the completed drink info, since the backend is waiting for this update.
+
+                // Anuj - Get a handle to the element that was clicked, in this case the div element
+                //client.publish('DrinkMe/Test','MESSAGE!!!!!');
+                var element = e.currentTarget;
+                console.log(element)
+                // Anuj - Get the data-name attribute
+                var OrderID = $(element).data('name');
+                console.log(OrderID);
+                // Anuj - Now we find the order from the ordersTable that belongs to name. Change the status field to complete
+                //client.publish('DrinkMe/Test','MESSAGE!!!!!');
+                // Anuj - Note that this function breaks if you have multiple orders from the same user. I would recommend you to use a order_id field that can identify unique orders
+
+                ordersTable.forEach(function (o) {
+                    //client.publish('DrinkMe/Test','MESSAGE!!!!!');
+                    if (o.OrderID == OrderID) {
+                        o.status = 'completed';
+
+                        console.log('complete');
+                        //client.publish('DrinkMe/Test','MESSAGE!!!!!');
+                        console.log('DrinkMe/' + BarID + '/Bar/' + 'setComplete/request');
+                        console.log(OrderID);
+                        //client.publish('DrinkMe/' + BarID + '/Bar/' + 'setComplete/request', OrderID);
+                        client.publish('DrinkMe/'+ BarID + '/Bar/' + 'setComplete/request',JSON.stringify(OrderID));
+                        console.log('DrinkMe/' + BarID + '/Bar/' + 'setComplete/request');
+
+                    }
+                });
+
+                // Anuj - We need to rerender the html again
+                renderObjects(ordersTable);
+                // Anuj - Now because we have rerendered, we need to listen for the events again
+                listenClick(ordersTable);
+            });
+        }
+
+        //listenClick();
+    </script>
+
+</html>
