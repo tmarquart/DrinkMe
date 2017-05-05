@@ -8,12 +8,12 @@ var fs = require('fs');
 
 //Create new DB
 
-var dbObj={};
+var dbObj = {};
 var db;
 //var Username=1000000*Math.floor(Math.random());
 //Username=Username.toString();
-var Username='User1';
-var BarID='MuddyCharles';
+var Username = 'User1';
+var BarID = 'MuddyCharles';
 //var BaseChannel='DrinkMe/' + BarID + '/' + Username +'/';
 
 //MQTT
@@ -30,65 +30,86 @@ client.on('connect', function () {
 client.on('message', function (topic, msg) {
     //console.log(msg.toString());
     //var newobj=JSON.parse(msg.toString());
-    var msgStr=msg.toString();
-    var topicArr=topic.split('/');
-    var UsernameID=topicArr.splice(2,1);
-    var exUser=topicArr.join('/');
+    var msgStr = msg.toString();
+    var topicArr = topic.split('/');
+    var UsernameID = topicArr.splice(2, 1);
+    var exUser = topicArr.join('/');
     //console.log(JSON.stringify(topicArr));
     console.log(topic);
     //if (newobj.command=='getMenu'){
-    if (exUser=='DrinkMe/MuddyCharles/getMenu/request'){
+    if (exUser == 'DrinkMe/MuddyCharles/getMenu/request') {
         console.log('GET MENU!');
         //console.log(msg.data);
-        client.publish(topic.replace('request','response'),JSON.stringify(getDrinksList(msgStr)));
+        client.publish(topic.replace('request', 'response'), JSON.stringify(getDrinksList(msgStr)));
     }
-    if (exUser=='DrinkMe/MuddyCharles/addDrink/request'){
+    if (exUser == 'DrinkMe/MuddyCharles/addDrink/request') {
         LoadDB();
-        addToCart({CustomerID:UsernameID[0],BarID:BarID,ItemID:msgStr});
-        var out=db.exec("SELECT * FROM OrderDetail;");
+        addToCart({ CustomerID: UsernameID[0], BarID: BarID, ItemID: msgStr });
+        var out = db.exec("SELECT * FROM OrderDetail;");
         //console.log(JSON.stringify(out));
         SaveDB();
     }
-    if (exUser=='DrinkMe/MuddyCharles/getCart/request'){
+    if (exUser == 'DrinkMe/MuddyCharles/getCart/request') {
         LoadDB();
         var cart = getCart(msgStr);
-        if (cart.length==0){
-            cartAll={cart:'Empty',TotalCost:0};
-            client.publish(topic.replace('request','response'),JSON.stringify(cartAll));
+        if (cart.length == 0) {
+            cartAll = { cart: 'Empty', TotalCost: 0 };
+            client.publish(topic.replace('request', 'response'), JSON.stringify(cartAll));
             return;
         }
-        var cartObj=objectify(cart);
-        var cartTot=objectify(getCartTotal(msgStr));
+        var cartObj = objectify(cart);
+        var cartTot = objectify(getCartTotal(msgStr));
         //console.log(cartTot.TotalCost);
-        var cartList=cartObj.reduce(function(prev,current){
+        var cartList = cartObj.reduce(function (prev, current) {
             return prev + '<br>' + current.ItemName;
-        },'');
+        }, '');
         //console.log (cartList);
-        var cartAll = {cart:cartList,TotalCost:cartTot[0].TotalCost};
+        var cartAll = { cart: cartList, TotalCost: cartTot[0].TotalCost };
         //console.log(JSON.stringify(objectify(getCartTotal(msgStr))));
-        client.publish(topic.replace('request','response'),JSON.stringify(cartAll));
+        client.publish(topic.replace('request', 'response'), JSON.stringify(cartAll));
         SaveDB();
     }
-    if (exUser=='DrinkMe/MuddyCharles/checkout/request'){
-        var msgObj=JSON.parse(msg);
+    if (exUser == 'DrinkMe/MuddyCharles/checkout/request') {
+        var msgObj = JSON.parse(msg);
         LoadDB();
         checkout(msgObj);
         SaveDB();
     }
-    if (exUser=='DrinkMe/' + BarID  + '/getOrders/request'){
+    if (exUser == 'DrinkMe/' + BarID + '/getOrders/request') {
         LoadDB();
-        var out2=getBarActiveOrders(BarID);
-        out2=objectify(out2);
-        client.publish(topic.replace('request','response'),JSON.stringify(out2));
+        var out2 = getBarActiveOrders(BarID);
+        console.log(out2);
+        //console.log(out2[0].values.length);
+        if (out2.length == 0) {
+        //if (!out2[0].hasOwnProperty('columns')) {
+            out2 = [{
+                CustomerName: 'Empty',
+                ItemNames: '',
+                OrderCost: '',
+                CustomerComments: '',
+                Status: 'Active',
+                OrderID: '999'
+            }];
+        } else { out2 = objectify(out2); }
+        client.publish(topic.replace('request', 'response'), JSON.stringify(out2));
         SaveDB();
     }
-    if (exUser=='DrinkMe/' + BarID  + '/setComplete/request'){
+    if (exUser == 'DrinkMe/' + BarID + '/setComplete/request') {
         LoadDB();
         console.log(msgStr);
         setComplete(msgStr);
-        var out3=getBarActiveOrders(BarID);
-        out3=objectify(out3);
-        client.publish('DrinkMe/' + BarID  + '/Bar/getOrders/request',JSON.stringify(out3));
+        var out3 = getBarActiveOrders(BarID);
+        if (out3.length==0) {
+            out3 = [{
+                CustomerName: 'Empty',
+                ItemNames: '',
+                OrderCost: '',
+                CustomerComments: '',
+                Status: 'Active',
+                OrderID: '999'
+            }];
+        } else { out3 = objectify(out3); }
+        client.publish('DrinkMe/' + BarID + '/Bar/getOrders/request', JSON.stringify(out3));
         SaveDB();
 
     }
@@ -102,66 +123,66 @@ client.on('message', function (topic, msg) {
 
 
 
-function NewDB(){
+function NewDB() {
     db = new sql.Database();
     var sqlstr = initialDBString();
     db.run(sqlstr);
 }
 
-function LoadDB(){
+function LoadDB() {
     var filebuffer = fs.readFileSync('filename.sqlite');
     db = new sql.Database(filebuffer);
 }
 
-function getDrinksList(BarID){
+function getDrinksList(BarID) {
     LoadDB(); //NEW
     //NewDB();
-    var arr=db.exec('SELECT * FROM ItemDetails WHERE BarID="' + BarID + '";');
+    var arr = db.exec('SELECT * FROM ItemDetails WHERE BarID="' + BarID + '";');
     //console.log(JSON.stringify(arr));
     SaveDB();
     return objectify(arr);
 }
 
 
- var testOrder = { ItemID: 1, CustomerID: 2, BarID: 1 };
+var testOrder = { ItemID: 1, CustomerID: 2, BarID: 1 };
 
-function SaveDB(){
+function SaveDB() {
     var data = db.export();
     var buffer = new Buffer(data);
     fs.writeFileSync('./filename.sqlite', buffer);
 }
 //functions
 
-function getBarActiveOrders(BarID){
-    var sqlstr=('SELECT Name AS CustomerName, SUM(ItemCost) AS OrderCost, GROUP_CONCAT(ItemName) AS ItemNames,'+
-    ' Orders.OrderID AS OrderID, OrderStatus, Special AS CustomerComments FROM Orders'+ 
-    ' LEFT JOIN OrderDetail ON OrderDetail.OrderID=Orders.OrderID LEFT JOIN ItemDetails'+
-    ' ON ItemDetails.ItemID=OrderDetail.ItemID WHERE Orders.BarID="' + BarID +  
-    '" AND OrderStatus="Active" GROUP BY CustomerName, Orders.OrderID, OrderStatus, Special ORDER BY OrderTime;');
+function getBarActiveOrders(BarID) {
+    var sqlstr = ('SELECT Name AS CustomerName, SUM(ItemCost) AS OrderCost, GROUP_CONCAT(ItemName) AS ItemNames,' +
+        ' Orders.OrderID AS OrderID, OrderStatus, Special AS CustomerComments FROM Orders' +
+        ' LEFT JOIN OrderDetail ON OrderDetail.OrderID=Orders.OrderID LEFT JOIN ItemDetails' +
+        ' ON ItemDetails.ItemID=OrderDetail.ItemID WHERE Orders.BarID="' + BarID +
+        '" AND OrderStatus="Active" GROUP BY CustomerName, Orders.OrderID, OrderStatus, Special ORDER BY OrderTime;');
     //console.log(sqlstr);
-    var output=db.exec(sqlstr);
+    var output = db.exec(sqlstr);
     return output;
 }
 
-function checkout(msg){
+function checkout(msg) {
     //if a customer has two orders it puts both behind further...may need to fix. Due to the use of customer id vs order id
-    db.run('UPDATE Orders SET OrderStatus="Active", OrderTime=' + Date.now() + ', Name="' + msg.name + '", Special="' + msg.comment+  '" WHERE CustomerID="' + msg.CustomerID + '" AND OrderStatus="Pending";');
+    db.run('UPDATE Orders SET OrderStatus="Active", OrderTime=' + Date.now() + ', Name="' + msg.name + '", Special="' + msg.comment + '" WHERE CustomerID="' + msg.CustomerID + '" AND OrderStatus="Pending";');
     //console.log('CHECKED OUT');
     //console.log(JSON.stringify(getBarActiveOrders(BarID)));
 }
 
-function setComplete(OrderID){
+function setComplete(OrderID) {
     //date??? not needed probably
     db.run('UPDATE Orders SET OrderStatus="Complete" WHERE OrderID=' + OrderID + ';');
 }
 
-function getCart(CustomerID){
-    var out= db.exec('SELECT ItemName FROM OrderDetail LEFT JOIN Orders ON OrderDetail.OrderID=Orders.OrderID LEFT JOIN ItemDetails ON ItemDetails.ItemID=OrderDetail.ItemID WHERE CustomerID="' + CustomerID +  '" AND OrderStatus="Pending";')
+function getCart(CustomerID) {
+    var out = db.exec('SELECT ItemName FROM OrderDetail LEFT JOIN Orders ON OrderDetail.OrderID=Orders.OrderID LEFT JOIN ItemDetails ON ItemDetails.ItemID=OrderDetail.ItemID WHERE CustomerID="' + CustomerID + '" AND OrderStatus="Pending";')
     return out;
 }
 
-function getCartTotal(CustomerID){
-    return db.exec('SELECT SUM(ItemCost) AS TotalCost FROM OrderDetail LEFT JOIN Orders ON OrderDetail.OrderID=Orders.OrderID LEFT JOIN ItemDetails ON ItemDetails.ItemID=OrderDetail.ItemID WHERE CustomerID="' + CustomerID +  '" AND OrderStatus="Pending";');
+function getCartTotal(CustomerID) {
+    return db.exec('SELECT SUM(ItemCost) AS TotalCost FROM OrderDetail LEFT JOIN Orders ON OrderDetail.OrderID=Orders.OrderID LEFT JOIN ItemDetails ON ItemDetails.ItemID=OrderDetail.ItemID WHERE CustomerID="' + CustomerID + '" AND OrderStatus="Pending";');
 }
 
 function addToCart(inputs) {
@@ -178,15 +199,15 @@ function addToCart(inputs) {
         var orderObj = { CustomerID: inputs.CustomerID, OrderStatus: 'Pending', OrderTime: Date.now(), BarID: inputs.BarID };
         var sqlstr = addItem(orderObj, 'Orders');
         db.run(sqlstr);
-        orderID=db.exec('SELECT last_insert_rowid();')[0].values[0][0];
+        orderID = db.exec('SELECT last_insert_rowid();')[0].values[0][0];
     } else {
         //use existing orderid
-        orderID=testout[0].values[0][0]; //currently no testing to see if two open orders exist, which shouldnt happen
+        orderID = testout[0].values[0][0]; //currently no testing to see if two open orders exist, which shouldnt happen
         //console.log(orderID);
     }
 
-    var orderItem={ItemID:inputs.ItemID, OrderID:orderID};
-    var sqlstr2 = addItem(orderItem,'OrderDetail');
+    var orderItem = { ItemID: inputs.ItemID, OrderID: orderID };
+    var sqlstr2 = addItem(orderItem, 'OrderDetail');
     //console.log(sqlstr2);
     db.run(sqlstr2);
     //var orderID=db.exec('SELECT last_insert_rowid();');
@@ -241,7 +262,7 @@ function initialDBString() {
     var firstDrink = { ItemName: 'Miller High Life', ItemCost: 1.50, BarID: 'MuddyCharles', Type: 'Beer', ItemDescription: 'Super cheap' };
     var drink2 = { ItemName: 'Bud Light', ItemCost: 2, BarID: 'MuddyCharles', Type: 'Beer', ItemDescription: 'Cheap' };
     var drink3 = { ItemName: 'Pinot Noir', ItemCost: 5, BarID: 'MuddyCharles', Type: 'Wine', ItemDescription: 'White Wine' };
-    var drink4= { ItemName: 'Margarita', ItemCost: 5, BarID: 'MuddyCharles', Type: 'Cocktail', ItemDescription: 'A taste of Mexico' };
+    var drink4 = { ItemName: 'Margarita', ItemCost: 5, BarID: 'MuddyCharles', Type: 'Cocktail', ItemDescription: 'A taste of Mexico' };
     sqlstr += addItem(firstDrink, 'ItemDetails');
     sqlstr += addItem(drink2, 'ItemDetails');
     sqlstr += addItem(drink3, 'ItemDetails');
@@ -264,9 +285,9 @@ function initialDBString() {
     //db.run(sqluser);
 
     sqlstr += 'CREATE TABLE OrderDetail (DetailID INTEGER PRIMARY KEY, ItemID integer, OrderID integer);';
-    var orderdetail1 = { ItemID: 1, OrderID: 1};
-    var orderdetail2 = { ItemID: 2, OrderID: 1};
-    var orderdetail3 = { ItemID: 1, OrderID: 2};
+    var orderdetail1 = { ItemID: 1, OrderID: 1 };
+    var orderdetail2 = { ItemID: 2, OrderID: 1 };
+    var orderdetail3 = { ItemID: 1, OrderID: 2 };
     sqlstr += addItem(orderdetail1, 'OrderDetail');
     sqlstr += addItem(orderdetail2, 'OrderDetail');
     sqlstr += addItem(orderdetail3, 'OrderDetail');
@@ -281,7 +302,7 @@ function initialDBString() {
     return sqlstr;
 }
 
-function channel2Obj(inputString){
+function channel2Obj(inputString) {
     inputString.split('/');
 }
 
