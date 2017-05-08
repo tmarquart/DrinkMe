@@ -26,59 +26,32 @@
             font-size: 25px;
             font-weight: bold;
             text-align: center;
-            background:white;
+            background: #dbdfe5;
             margin: 10px;
-            color: black;
-            }
-
-        #banner{
-        background-size: 100%;
-        background-image: url("https://images.pexels.com/photos/132205/pexels-photo-132205.jpeg?w=940&h=650&auto=compress&cs=tinysrgb");
-        color: white;
         }
-
-        body {
-            background-image: url("https://images.pexels.com/photos/301692/pexels-photo-301692.jpeg?w=940&h=650&auto=compress&cs=tinysrgb");
-            padding-bottom: 50px;
-        }
-
-        #footer {
-        position:absolute;
-        bottom:0;
-        width:100%;
-        height:50px;
-        text-align: center;
-        padding: 10px;
-        color: white;
-        }
-        
     </style>
 </head>
 
 <body>
 
     <!--Title-->
-    <banner>
-    <div id="banner" <div class="jumbotron text-center">
+    <div class="jumbotron text-center">
         <h1>Orders Up!</h1>
         <h3>Click order to mark as complete</h3>
-    </div>
-    </banner>
-
-    <div id="footer" width="100%" class="footer">
-        <body> Brought to you by DrinkMe</body>
     </div>
 
     <!--Handlebars Template for Orders-->
     <div id="CustomerOrder"></div>
-
-    <script id="orders-template" type="text/x-handlebars-template" item-width: auto>
+    <!-- Anuj - i added in a class variable (read up on the difference between ids and classes if its unknown)-->
+    <!-- Anuj - i also changed the Name variable to data-name, you'll see below why its useful -->
+    <!-- Anuj - both the above changes are contained within a div inside the script. Note that it is the div that will be injected into the dom. The script tag is not injected, hence any variables you set on the script are lost. Hence we are setting the variables on the div -->
+    <!-- Anuj - Is n a valid element? I changed the elements to h1, h4, h5. -->
+    <script id="orders-template" type="text/x-handlebars-template">
         <div class="order" data-name={{OrderID}}>
             <h1>{{CustomerName}}</h1>
             <h4>{{ItemNames}} (${{OrderCost}}) <br /> {{CustomerComments}}</h4>
             <h5>{{status}}</h5>
         </div>
-    </div>
     </script>
 
     <!--Render Orders to HTML-->

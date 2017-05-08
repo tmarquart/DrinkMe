@@ -98,6 +98,11 @@ client.on('message', function (topic, msg) {
         LoadDB();
         console.log(msgStr);
         setComplete(msgStr);
+        var userToNotify=db.exec('SELECT CustomerID FROM Orders WHERE OrderID=' + msgStr + ';');
+        console.log(JSON.stringify(userToNotify));
+        userToNotify=userToNotify[0].values[0][0];
+        client.publish('DrinkMe/' + BarID + '/' + userToNotify + '/notifyPatron/response',userToNotify);
+        //update bar orders
         var out3 = getBarActiveOrders(BarID);
         if (out3.length==0) {
             out3 = [{
@@ -109,7 +114,7 @@ client.on('message', function (topic, msg) {
                 OrderID: '999'
             }];
         } else { out3 = objectify(out3); }
-        client.publish('DrinkMe/' + BarID + '/Bar/getOrders/request', JSON.stringify(out3));
+        client.publish('DrinkMe/' + BarID + '/Bar/getOrders/request', JSON.stringify(out3)); //this refreshes the bar's list
         SaveDB();
 
     }
@@ -150,6 +155,7 @@ function SaveDB() {
     var data = db.export();
     var buffer = new Buffer(data);
     fs.writeFileSync('./filename.sqlite', buffer);
+    db.close();
 }
 //functions
 

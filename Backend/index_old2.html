@@ -37,16 +37,13 @@
 
     body{
         text-align:center;
-        background: darkgray;
     }
 
     #footer {
         position:absolute;
         bottom:0;
         width:100%;
-        height:100px;
-        padding-top: 50px;
-        color: white;
+        height:50px;
         }
 </style>
 
@@ -119,9 +116,6 @@
             //console.log(newobj);
             showCheckout(msg);
             console.log(msg.toString());
-        }
-        if (topic == BaseChannel + 'notifyPatron/response') {
-            alert("Your Order is ready! Please go to the bar to get your drinks");
         }
 
     });
@@ -231,6 +225,23 @@
 
 </script>
 
+<script>
+    // Record Order to OrderArray
+    var OrdersArray = []; //create empty orders object
+    // $("#OK_button").click(function (e) {
+    //     // OrdersArray.push($('#myModal #NameInput')[0].value);
+    //     // OrdersArray.push(cart);
+    //     // OrdersArray.push($('#myModal #CommentsInput')[0].value);
+    //     // var orderTime = Date.now();
+    //     // OrdersArray.push(orderTime);
+    //     // console.log('orders array: ' + OrdersArray);
+
+    //     client.publish('DrinkMe/' + BarID + '/' + Username + '/' + 'checkout/request',Username);
+    //     $('#myModal').modal('hide');
+    //     return OrdersArray;
+    // });
+
+</script>
 
 <script>
     //dismiss modal if "Nevermind"
@@ -242,3 +253,7 @@
 
 </html>
 
+
+<!--// on click add to cart (push drink into array that keeps track)
+// click checkout which brings up modal 
+// in modal enter name and click confirm-->
